@@ -1,60 +1,51 @@
 <!doctype html>
-<html lang="en">
-
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Link 1</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <title>{{ __('ui.features') }} · {{ __('ui.app_name') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-
-<body>
-    <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Project</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
-                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/link1">Link 1</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-                    </li>
-                </ul>
-                <form class="d-flex" role="search">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
-                </form>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="{{ url('/') }}">{{ __('ui.app_name') }}</a>
+            <div class="d-flex align-items-center gap-3">
+                @include('partials.language-switcher')
+                <a class="btn btn-primary btn-sm" href="{{ route('login') }}">{{ __('ui.sign_in') }}</a>
             </div>
         </div>
     </nav>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="sidebar border border-right col-md-3 col-lg-2 p-0 bg-body-tertiary">
-                <a href="/"
-                    class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
-                    <div class="list-group">
-                        <a href="/" class="list-group-item list-group-item-action">Home</a>
-                        <a href="/link1" class="list-group-item list-group-item-action">Link 1</a>
-                        <a href="/link3" class="list-group-item list-group-item-action">Link 2</a>
-                    </div>
+    <main class="container py-5">
+        <a href="{{ url('/') }}" class="text-decoration-none">&larr; {{ __('ui.home') }}</a>
+        <h1 class="display-5 fw-bold mt-3">{{ __('ui.features_title') }}</h1>
+        <p class="lead text-secondary mb-5">{{ __('ui.features_intro') }}</p>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <article class="card h-100 border-0 shadow-sm"><div class="card-body">
+                    <h2 class="h5">{{ __('ui.schedule_feature') }}</h2><p class="text-secondary mb-0">{{ __('ui.schedule_feature_description') }}</p>
+                </div></article>
             </div>
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <h1>This is link 1 page</h1>
-            </main>
+            <div class="col-md-6 col-lg-3">
+                <article class="card h-100 border-0 shadow-sm"><div class="card-body">
+                    <h2 class="h5">{{ __('ui.manage_feature') }}</h2><p class="text-secondary mb-0">{{ __('ui.manage_feature_description') }}</p>
+                </div></article>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <article class="card h-100 border-0 shadow-sm"><div class="card-body">
+                    <h2 class="h5">{{ __('ui.share_feature') }}</h2><p class="text-secondary mb-0">{{ __('ui.share_feature_description') }}</p>
+                </div></article>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <article class="card h-100 border-0 shadow-sm"><div class="card-body">
+                    <h2 class="h5">{{ __('ui.cancel_feature') }}</h2><p class="text-secondary mb-0">{{ __('ui.cancel_feature_description') }}</p>
+                </div></article>
+            </div>
         </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous">
-    </script>
+        <div class="alert alert-info mt-5">
+            {{ __('ui.zoom_notice') }}
+        </div>
+        <a class="btn btn-primary" href="{{ route('login') }}">{{ __('ui.sign_in_to_continue') }}</a>
+    </main>
 </body>
-
 </html>
