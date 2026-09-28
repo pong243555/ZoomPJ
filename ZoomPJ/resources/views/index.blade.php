@@ -18,8 +18,9 @@
                     <a class="nav-link" href="{{ route('login') }}">{{ __('ui.sign_in') }}</a>
                     @auth
                         @if (Auth::user()->role === 'admin')
-                            <a class="btn btn-primary btn-sm" href="{{ route('zoom.index') }}">{{ __('ui.open_dashboard') }}</a>
+                            <a class="btn btn-primary btn-sm" href="{{ route('admin.dashboard') }}">{{ __('ui.open_dashboard') }}</a>
                         @else
+                            <a class="btn btn-primary btn-sm" href="{{ route('bookings.index') }}">{{ __('ui.book_a_meeting') }}</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button class="btn btn-outline-light btn-sm" type="submit">{{ __('ui.sign_out') }}</button>
@@ -42,7 +43,17 @@
                         {{ __('ui.home_intro') }}
                     </p>
                     <div class="d-flex flex-wrap gap-2 mt-4">
-                        <a class="btn btn-primary btn-lg" href="{{ route('login') }}">{{ __('ui.sign_in') }}</a>
+                        <a class="btn btn-outline-success btn-lg" href="{{ route('availability.index') }}">{{ __('ui.browse_availability') }}</a>
+                        @auth
+                            @if (Auth::user()->role === 'admin')
+                                <a class="btn btn-primary btn-lg" href="{{ route('admin.dashboard') }}">{{ __('ui.open_dashboard') }}</a>
+                            @else
+                                <a class="btn btn-primary btn-lg" href="{{ route('bookings.index') }}">{{ __('ui.book_a_meeting') }}</a>
+                            @endif
+                        @else
+                            <a class="btn btn-primary btn-lg" href="{{ route('login') }}">{{ __('ui.sign_in') }}</a>
+                            <a class="btn btn-outline-primary btn-lg" href="{{ route('register') }}">{{ __('ui.create_account') }}</a>
+                        @endauth
                         <a class="btn btn-outline-secondary btn-lg" href="{{ url('/link1') }}">{{ __('ui.features') }}</a>
                     </div>
                     <p class="small text-secondary mt-3 mb-0">{{ __('ui.admin_only_note') }}</p>

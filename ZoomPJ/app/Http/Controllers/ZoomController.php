@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Services\ZoomApiService;
+use App\Models\ZoomConnection;
+use App\Models\MeetingBooking;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class ZoomController extends Controller
@@ -15,31 +20,49 @@ class ZoomController extends Controller
 
     public function index(): View
     {
-        $meetings = session()->has('zoom_refresh_token')
-            ? $this->zoom->listMeetings()
-            : [];
+        $meetings = [];
+        $zoomError = null;
+        $isConnected = ZoomConnection::query()->exists();
+
+        if ($isConnected) {
+            try {
+                $meetings = $this->zoom->listMeetings();
+            } catch (RequestException $exception) {
+                $zoomError = $exception->getMessage();
+            }
+        }
 
         return view('zoom.index', [
             'meetings' => $meetings,
-            'isConnected' => session()->has('zoom_refresh_token'),
+            'zoomError' => $zoomError,
+            'bookingsByMeetingId' => MeetingBooking::query()
+                ->with('user')
+                ->get()
+                ->keyBy('zoom_meeting_id'),
+            'isConnected' => $isConnected,
         ]);
     }
 
     public function connect(): RedirectResponse
     {
         $state = bin2hex(random_bytes(32));
-        session(['zoom_oauth_state' => $state]);
+        Cache::put(
+            'zoom_oauth_state:'.$state,
+            (int) Auth::id(),
+            now()->addMinutes(10)
+        );
 
         return redirect()->away($this->zoom->authorizationUrl($state));
     }
 
     public function callback(Request $request): RedirectResponse
     {
-        $expectedState = (string) session('zoom_oauth_state', '');
         $receivedState = (string) $request->query('state', '');
-        session()->forget('zoom_oauth_state');
+        $initiatingUserId = $receivedState !== ''
+            ? Cache::pull('zoom_oauth_state:'.$receivedState)
+            : null;
 
-        if ($expectedState === '' || ! hash_equals($expectedState, $receivedState)) {
+        if (! is_int($initiatingUserId) || $initiatingUserId !== (int) Auth::id()) {
             abort(419, 'Zoom authorization state did not match. Please connect again.');
         }
 
@@ -85,10 +108,20 @@ class ZoomController extends Controller
 
     public function update(Request $request, string $meetingId): RedirectResponse
     {
+        $data = $this->validatedMeeting($request);
         $this->zoom->updateMeeting(
             $meetingId,
-            $this->zoomPayload($this->validatedMeeting($request))
+            $this->zoomPayload($data)
         );
+
+        MeetingBooking::query()
+            ->where('zoom_meeting_id', $meetingId)
+            ->update([
+                'topic' => $data['topic'],
+                'agenda' => $data['agenda'] ?? null,
+                'start_time' => \Illuminate\Support\Carbon::parse($data['start_time'], config('app.timezone')),
+                'duration' => (int) $data['duration'],
+            ]);
 
         return redirect()->route('zoom.index')->with('status', __('ui.meeting_updated'));
     }
@@ -96,6 +129,14 @@ class ZoomController extends Controller
     public function destroy(string $meetingId): RedirectResponse
     {
         $this->zoom->deleteMeeting($meetingId);
+        MeetingBooking::query()
+            ->where('zoom_meeting_id', $meetingId)
+            ->where('status', 'booked')
+            ->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancelled_by_user_id' => auth()->id(),
+            ]);
 
         return redirect()->route('zoom.index')->with('status', __('ui.meeting_cancelled'));
     }
@@ -116,7 +157,7 @@ class ZoomController extends Controller
             'topic' => $data['topic'],
             'agenda' => $data['agenda'] ?? '',
             'type' => 2,
-            'start_time' => \Illuminate\Support\Carbon::parse($data['start_time'])
+            'start_time' => \Illuminate\Support\Carbon::parse($data['start_time'], config('app.timezone'))
                 ->timezone('UTC')
                 ->format('Y-m-d\TH:i:s\Z'),
             'duration' => (int) $data['duration'],

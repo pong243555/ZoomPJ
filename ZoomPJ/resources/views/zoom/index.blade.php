@@ -10,11 +10,15 @@
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ route('zoom.index') }}">{{ __('ui.app_name') }}</a>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button class="btn btn-outline-light btn-sm" type="submit">{{ __('ui.sign_out') }}</button>
-            </form>
-            @include('partials.language-switcher')
+            <div class="d-flex align-items-center gap-3">
+                <a class="btn btn-outline-light btn-sm" href="{{ route('admin.dashboard') }}">{{ __('ui.admin_dashboard') }}</a>
+                <a class="btn btn-outline-light btn-sm" href="{{ route('admin.bookings') }}">{{ __('ui.view_all_bookings') }}</a>
+                @include('partials.language-switcher')
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button class="btn btn-outline-light btn-sm" type="submit">{{ __('ui.sign_out') }}</button>
+                </form>
+            </div>
         </div>
     </nav>
 
@@ -25,7 +29,7 @@
                 <p class="text-secondary mb-0">{{ __('ui.meetings_description') }}</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-outline-light btn-sm text-dark border" href="{{ route('user') }}">{{ __('ui.user_accounts') }}</a>
+                <a class="btn btn-outline-light btn-sm text-dark border" href="{{ route('admin.users') }}">{{ __('ui.user_accounts') }}</a>
                 @if ($isConnected)
                     <form method="POST" action="{{ route('zoom.disconnect') }}">
                         @csrf
@@ -43,6 +47,15 @@
         @endif
         @if (session('error'))
             <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+        @endif
+        @if ($zoomError)
+            <div class="alert alert-danger" role="alert">
+                <p class="mb-2">{{ __('ui.zoom_connection_error') }}</p>
+                <details>
+                    <summary>{{ __('ui.error_details') }}</summary>
+                    <pre class="small text-wrap mb-0 mt-2">{{ $zoomError }}</pre>
+                </details>
+            </div>
         @endif
         @if (session('created_join_url'))
             <div class="alert alert-info">
@@ -100,7 +113,12 @@
                                         <strong>{{ $meeting['topic'] ?? __('ui.untitled_meeting') }}</strong>
                                         @if (!empty($meeting['agenda']))<div class="small text-secondary">{{ $meeting['agenda'] }}</div>@endif
                                     </td>
-                                    <td>{{ \Illuminate\Support\Carbon::parse($meeting['start_time'])->locale(app()->getLocale())->timezone(config('app.timezone'))->translatedFormat('M j, Y g:i A') }}</td>
+                                    <td>{{ \Illuminate\Support\Carbon::parse($meeting['start_time'])->locale(app()->getLocale())->timezone(config('app.timezone'))->translatedFormat('M j, Y g:i A') }}
+                                        @php($booking = $bookingsByMeetingId->get((string) $meeting['id']))
+                                        @if ($booking)
+                                            <div class="small text-secondary">{{ __('ui.booking_for') }}: {{ $booking->user?->name ?? __('ui.user') }}</div>
+                                        @endif
+                                    </td>
                                     <td>{{ $meeting['duration'] ?? '—' }} {{ __('ui.minutes') }}</td>
                                     <td>
                                         @if (!empty($meeting['join_url']))

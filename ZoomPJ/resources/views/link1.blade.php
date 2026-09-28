@@ -45,7 +45,10 @@
         <div class="alert alert-info mt-5">
             {{ __('ui.zoom_notice') }}
         </div>
-        <a class="btn btn-primary" href="{{ route('login') }}">{{ __('ui.sign_in_to_continue') }}</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" href="{{ route('availability.index') }}">{{ __('ui.browse_availability') }}</a>
+            <a class="btn btn-outline-primary" href="{{ route('login') }}">{{ __('ui.sign_in_to_continue') }}</a>
+        </div>
     </main>
 </body>
 </html>

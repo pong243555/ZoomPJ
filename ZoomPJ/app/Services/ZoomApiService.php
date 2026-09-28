@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ZoomConnection;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -34,27 +35,6 @@ class ZoomApiService
             ->json();
     }
 
-    public function refreshAccessToken(): array
-    {
-        $refreshToken = session('zoom_refresh_token');
-
-        if (! $refreshToken) {
-            throw new RuntimeException('Connect your Zoom account before managing meetings.');
-        }
-
-        return Http::asForm()
-            ->withBasicAuth(
-                $this->requiredConfig('client_id'),
-                $this->requiredConfig('client_secret')
-            )
-            ->post('https://zoom.us/oauth/token', [
-                'grant_type' => 'refresh_token',
-                'refresh_token' => $refreshToken,
-            ])
-            ->throw()
-            ->json();
-    }
-
     public function storeTokens(array $tokens): void
     {
         if (
@@ -65,20 +45,20 @@ class ZoomApiService
             throw new RuntimeException("Zoom returned an invalid token response.");
         }
 
-        session([
-            'zoom_access_token' => $tokens['access_token'],
-            'zoom_refresh_token' => $tokens['refresh_token'],
-            'zoom_token_expires_at' => now()->timestamp + (int) $tokens['expires_in'],
-        ]);
+        $connection = ZoomConnection::query()->first() ?? new ZoomConnection();
+        if (! $connection->exists) {
+            $connection->id = 1;
+        }
+
+        $connection->access_token = $tokens['access_token'];
+        $connection->refresh_token = $tokens['refresh_token'];
+        $connection->expires_at = now()->addSeconds((int) $tokens['expires_in']);
+        $connection->save();
     }
 
     public function forgetTokens(): void
     {
-        session()->forget([
-            'zoom_access_token',
-            'zoom_refresh_token',
-            'zoom_token_expires_at',
-        ]);
+        ZoomConnection::query()->delete();
     }
 
     public function listMeetings(): array
@@ -150,22 +130,36 @@ class ZoomApiService
 
     private function request(): PendingRequest
     {
-        $expiresAt = (int) session('zoom_token_expires_at', 0);
-        $accessToken = session('zoom_access_token');
+        $connection = ZoomConnection::query()->first();
 
-        if (! $accessToken || $expiresAt <= now()->timestamp + 60) {
-            $tokens = $this->refreshAccessToken();
-            $this->storeTokens($tokens);
-            $accessToken = session('zoom_access_token');
+        if (! $connection) {
+            throw new RuntimeException('An administrator must connect Zoom before bookings can be made.');
         }
 
-        if (! is_string($accessToken) || $accessToken === '') {
-            throw new RuntimeException('Zoom access token is unavailable. Reconnect your Zoom account.');
+        if ($connection->expires_at->lte(now()->addMinute())) {
+            $tokens = $this->refreshAccessToken($connection);
+            $this->storeTokens($tokens);
+            $connection = ZoomConnection::query()->findOrFail($connection->id);
         }
 
         return Http::baseUrl('https://api.zoom.us/v2/')
             ->acceptJson()
-            ->withToken($accessToken);
+            ->withToken($connection->access_token);
+    }
+
+    private function refreshAccessToken(ZoomConnection $connection): array
+    {
+        return Http::asForm()
+            ->withBasicAuth(
+                $this->requiredConfig('client_id'),
+                $this->requiredConfig('client_secret')
+            )
+            ->post('https://zoom.us/oauth/token', [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $connection->refresh_token,
+            ])
+            ->throw()
+            ->json();
     }
 
     private function requiredConfig(string $key): string

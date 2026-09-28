@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZoomController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Http\Request;
 /*
 |--------------------------------------------------------------------------
@@ -34,20 +37,39 @@ Route::post('/language', function (Request $request) {
     return back();
 })->name('language.switch');
 
+Route::get('/availability', [AvailabilityController::class, 'index'])
+    ->middleware('throttle:30,1')
+    ->name('availability.index');
+Route::post('/availability/continue', [AvailabilityController::class, 'continueToBooking'])
+    ->middleware('throttle:30,1')
+    ->name('availability.continue');
+
 Route::middleware('guest')->group(function () {
+    Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-    Route::get('/admin/sign-in', [AuthController::class, 'showAdminLoginForm'])->name('admin.login');
-    Route::post('/admin/sign-in', [AuthController::class, 'adminLogin'])->middleware('throttle:5,1')
-        ->name('admin.login.submit');
+    Route::get('/admin/sign-in', fn () => redirect()->route('login'))->name('admin.login');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
+Route::middleware(['auth', 'regular-user'])->group(function () {
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
+});
+
 Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/bookings', [AdminController::class, 'bookings'])->name('admin.bookings');
+    Route::delete('/admin/bookings/{booking}', [AdminController::class, 'destroyBooking'])->name('admin.bookings.destroy');
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users');
+
     Route::get('/zoom', [ZoomController::class, 'index'])->name('zoom.index');
     Route::get('/zoom/connect', [ZoomController::class, 'connect'])->name('zoom.connect');
     Route::get('/zoom/callback', [ZoomController::class, 'callback'])->name('zoom.callback');

@@ -12,6 +12,7 @@
             <h1 class="h3 mb-0">{{ __('ui.login_title') }}</h1>
             @include('partials.language-switcher')
         </div>
+        <p class="text-secondary">{{ __('ui.shared_login_note') }}</p>
         @if ($errors->any())
             <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>
         @endif
@@ -31,6 +32,7 @@
             </div>
             <button class="btn btn-primary" type="submit">{{ __('ui.sign_in') }}</button>
         </form>
+        <p class="text-center mt-3">{{ __('ui.no_account') }} <a href="{{ route('register') }}">{{ __('ui.create_account') }}</a></p>
         <p class="text-center mt-3"><a href="{{ url('/') }}" class="link-secondary">{{ __('ui.back_home') }}</a></p>
     </main>
 </body>

@@ -12,6 +12,8 @@
             <a class="navbar-brand" href="{{ route('zoom.index') }}">{{ __('ui.app_name') }}</a>
             <div class="d-flex gap-2">
                 @include('partials.language-switcher')
+                <a class="btn btn-outline-light btn-sm" href="{{ route('admin.dashboard') }}">{{ __('ui.admin_dashboard') }}</a>
+                <a class="btn btn-outline-light btn-sm" href="{{ route('admin.bookings') }}">{{ __('ui.view_all_bookings') }}</a>
                 <a class="btn btn-outline-light btn-sm" href="{{ route('zoom.index') }}">{{ __('ui.meetings') }}</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
